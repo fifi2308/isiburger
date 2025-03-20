@@ -1,0 +1,45 @@
+name: CI/CD Pipeline
+
+on:
+  push:
+    branches:
+      - fatou_fall_burger  # Déclenche ce workflow lorsqu'il y a un push sur cette branche.
+  pull_request:
+    branches:
+      - fatou_fall_burger  # Déclenche ce workflow pour les PR sur cette branche.
+
+jobs:
+  build:
+    runs-on: ubuntu-latest  # Utiliser Ubuntu comme environnement de build.
+
+    steps:
+      # Étape 1 : Vérifier le code depuis GitHub
+      - name: Checkout code
+        uses: actions/checkout@v2  # Vérifie le code de votre dépôt dans l'environnement d'exécution.
+
+      # Étape 2 : Installer PHP et Composer (dépendances Laravel)
+      - name: Set up PHP
+        uses: shivammathur/setup-php@v2
+        with:
+          php-version: '8.0'  # Spécifier la version de PHP
+          extensions: mbstring, bcmath, curl, xml, zip  # Les extensions nécessaires pour Laravel.
+
+      - name: Install dependencies
+        run: |
+          composer install --no-dev --optimize-autoloader
+
+      # Étape 3 : Créer l'image Docker
+      - name: Build Docker image
+        run: |
+          docker build -t isiburger .
+      
+      # Étape 4 : Push l'image Docker vers Docker Hub (si nécessaire)
+      - name: Push Docker image to Docker Hub
+        run: |
+          docker login -u $DOCKER_USERNAME -p $DOCKER_PASSWORD
+          docker push isiburger
+
+      # Étape 5 : Webhook pour notifier Jenkins (si vous avez un Jenkins configuré)
+      - name: Notify Jenkins via Webhook
+        run: |
+          curl -X POST https://jenkins.local/your-webhook-url  # Remplacez par l'URL de votre Jenkins Webhook.
